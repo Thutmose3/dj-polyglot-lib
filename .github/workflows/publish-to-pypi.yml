@@ -1,0 +1,92 @@
+name: Publish Python Package
+
+on:
+  push:
+    branches:
+      - main  # Replace with the branch you want to trigger the deployment
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.11
+
+    - name: Semantic versioning
+      id: versioning
+      uses: paulhatch/semantic-version@v4.0.2
+      if: github.ref == 'refs/heads/main'
+      with:
+        branch: main
+        # A string which, if present in a git commit, indicates that a change represents a
+        # major (breaking) change, supports regular expressions wrapped with '/'
+        major_pattern: "(MAJOR)"
+        # Same as above except indicating a minor change, supports regular expressions wrapped with '/'
+        minor_pattern: "(MINOR)"
+        # A string to determine the format of the version output
+        format: "${major}.${minor}.${increment}"
+        # Optional path to check for changes. If any changes are detected in the path the
+        # 'changed' output will true. Enter multiple paths separated by spaces.
+        #change_path: "src/my-service"
+        # Named version, will be used as suffix for name version tag
+        #namespace: my-service
+        # Indicate whether short tags like 'v1' should be supported. If false only full
+        # tags like 'v1.0.0' will be recognized.
+        short_tags: true
+        # If this is set to true, *every* commit will be treated as a new version.
+        bump_each_commit: false
+
+    - name: Create Release
+      if: ${{ !startsWith(github.ref, 'refs/tags/')}}
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN:  ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.versioning.outputs.version }}
+        release_name: ${{ steps.versioning.outputs.version }}
+        prerelease: false
+
+    - name: Find and Replace
+      uses: jacobtomlinson/gha-find-replace@v3
+      with:
+        find: "    version=([0-9]+)\\.([0-9]+)\\.([0-9]+),"
+        replace: "    version=${{ steps.versioning.outputs.version }},"
+        include: "setup.py"
+
+    - run: git config --local user.email "action@github.com"
+      if: ${{ !startsWith(github.ref, 'refs/tags/')}}
+
+    - run: git config --local user.name "GitHub Action"
+      if: ${{ !startsWith(github.ref, 'refs/tags/')}}
+
+    - run: git add setup.py
+      if: ${{ !startsWith(github.ref, 'refs/tags/')}}
+
+    - run: git commit -m "Semantic Release"
+      if: ${{ !startsWith(github.ref, 'refs/tags/')}}
+
+    - run: "git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/Yeoki-ERP/dj_polyglot.git HEAD"
+      if: ${{ !startsWith(github.ref, 'refs/tags/')}}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install build twine
+
+    - name: Build the package
+      run: python -m build
+
+    - name: Publish to PyPI
+      env:
+        TWINE_USERNAME: "__token__"
+        TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+      run: python -m twine upload dist/*
+
+permissions:
+  contents: write
