@@ -1,6 +1,7 @@
 import logging
 import os
 import time
+import polib
 
 import requests
 from django.conf import settings
@@ -15,34 +16,31 @@ class Command(BaseCommand):
 
     def handle(self, *args, **kwargs):
         """Extracts all translatable strings and makes an API request with them."""
-        import polib
 
         logger.info("Pulling translations...")
         start_time = time.time()
-        source_project = settings.DJ_POLYGLOT_PROJECT
 
         if not getattr(settings, "DJ_POLYGLOT_PROJECT", None):
             raise ValueError("DJ_POLYGLOT_PROJECT is not set in the settings.")
+        
+        if not getattr(settings, "DJ_POLYGLOT_KEY", None):
+            raise ValueError("DJ_POLYGLOT_KEY is not set in the settings.")
 
-        source_projects = [source_project]
-
-        if getattr(settings, "DJ_POLYGLOT_PROJECT_EXTRA", None):
-            source_projects += settings.DJ_POLYGLOT_PROJECT_EXTRA
+        source_project = settings.DJ_POLYGLOT_PROJECT
 
         translations = []
 
-        for source_project in source_projects:
-            response = requests.post(
-                "https://dj-polyglot.com/api/pull-translations/",
-                data={"source_project": source_project},
-                headers={"Authorization": f"Token {settings.DJ_POLYGLOT_KEY}"},
-            )
+        response = requests.post(
+            "https://dj-polyglot.com/api/pull-translations/",
+            data={"source_project": source_project},
+            headers={"Authorization": f"Token {settings.DJ_POLYGLOT_KEY}"},
+        )
 
-            if response.status_code != 200:
-                logger.info(f"Failed to receive translatable strings. Status code: {response.status_code}, {response.content}. Time: {time.time() - start_time:.2f} seconds.")
-                return
-        
-            translations += response.json().get("translations", [])
+        if response.status_code != 200:
+            logger.info(f"Failed to receive translatable strings. Status code: {response.status_code}, {response.content}. Time: {time.time() - start_time:.2f} seconds.")
+            return
+    
+        translations += response.json()["translations"]
 
         logger.info(f"Successfully received {len(translations)} translations from {source_project}")
 
@@ -77,12 +75,16 @@ class Command(BaseCommand):
             for translation in locale_translations:
                 msgid = translation.get("msgid")
                 msgstr = translation.get("msgstr")
-                entry = po_file.find(msgid)
+                msgctxt = translation.get("msgctxt", None)
+                if msgctxt:
+                    entry = po_file.find(msgid, msgctxt=msgctxt)
+                else:
+                    entry = po_file.find(msgid)
 
                 if entry:
                     entry.msgstr = msgstr
                 else:
-                    po_file.append(polib.POEntry(msgid=msgid, msgstr=msgstr))
+                    po_file.append(polib.POEntry(msgid=msgid, msgstr=msgstr, msgctxt=msgctxt))
 
             # Remove obsolete entries
             for entry in po_file.obsolete_entries():

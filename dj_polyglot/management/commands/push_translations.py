@@ -78,4 +78,4 @@ class Command(BaseCommand):
         if response.status_code == 200:
             logger.info("Successfully pushed translatable strings.")
         else:
-            logger.error(f"Failed to push translatable strings. Status code: {response.status_code}")
+            logger.error(f"Failed to push translatable strings. Status code: {response.status_code} - {response.json()}")
