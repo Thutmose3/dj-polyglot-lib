@@ -26,8 +26,8 @@ DJ_POLYGLOT_KEY = "your_api_key"
 
 ```bash
 python manage.py push_translations
-python manage.py push_translations --no-obsolete
-python manage.py push_translations --auto-translate
+python manage.py push_translations no_obsolete
+python manage.py push_translations auto_translate
 ```
 
 This will read your .po files and push the strings to the translation service.
