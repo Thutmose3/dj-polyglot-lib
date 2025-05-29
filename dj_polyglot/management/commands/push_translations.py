@@ -8,25 +8,18 @@ from django.core.management.base import BaseCommand
 class Command(BaseCommand):
     """Command to extract all translatable strings and send them to an API endpoint."""
 
-    help = "Extracts all translatable strings and makes an API request with them."
+    help = __doc__.strip()
 
     def add_arguments(self, parser):
-        """Add arguments to the command."""
-
         parser.add_argument(
-            "no_obselete",
-            type=str,
-            nargs="?",
-            default=None,
-            help="Remove obselete translations from the API.",
+            "--no-obsolete",
+            action="store_true",
+            help="Tell the API to delete obsolete translations",
         )
-
         parser.add_argument(
-            "auto_translate",
-            type=str,
-            nargs="?",
-            default=None,
-            help="Remove obselete translations from the API.",
+            "--auto-translate",
+            action="store_true",
+            help="Request machine-translation of new strings",
         )
 
     def handle(self, *args, **kwargs):
@@ -57,13 +50,15 @@ class Command(BaseCommand):
                                 {"msgid": entry.msgid, "locale": os.path.basename(root), "context": entry.msgctxt}
                             )
 
-        self.stdout.write(f"Pusing {len(translatable_strings)} translatable strings to the API...")
+        self.stdout.write(
+            self.style.NOTICE(f"Pusing {len(translatable_strings)} translatable strings to the API...")
+        )
 
         data = {
             "translations": translatable_strings, 
             "source_project": settings.DJ_POLYGLOT_PROJECT,
-            "no_obselete": kwargs["no_obselete"] if kwargs["no_obselete"] else False,
-            "auto_translate": kwargs["auto_translate"] if kwargs["auto_translate"] else False,
+            "no_obselete": kwargs.get("no_obsolete", False),
+            "auto_translate": kwargs.get("auto_translate", False),
         }
 
         response = requests.post(
@@ -75,4 +70,5 @@ class Command(BaseCommand):
         if response.status_code == 200:
             self.stdout.write("Successfully pushed translatable strings.")
         else:
-            self.stdout.write(f"Failed to push translatable strings. Status code: {response.status_code} - {response.headers} - {response.text}")
+            self.stdout.write(f"Failed to push translatable strings")
+            self.stdout.write(f"Status code: {response.status_code} - {response.headers} - {response.text}")
