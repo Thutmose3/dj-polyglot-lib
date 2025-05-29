@@ -1,11 +1,8 @@
-import logging
 import os
 
 import requests
 from django.conf import settings
 from django.core.management.base import BaseCommand
-
-logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
@@ -49,7 +46,7 @@ class Command(BaseCommand):
         # Iterate over all .po files in the locale directory
         for root, dirs, files in os.walk(locale_path):
             for file in files:
-                logger.info(f"Processing file: {file}")
+                self.stdout.write(f"Processing file: {file}")
                 if file.endswith(".po"):
                     po_file_path = os.path.join(root, file)
                     po_file = polib.pofile(po_file_path)
@@ -60,7 +57,7 @@ class Command(BaseCommand):
                                 {"msgid": entry.msgid, "locale": os.path.basename(root), "context": entry.msgctxt}
                             )
 
-        logger.info(f"Pusing {len(translatable_strings)} translatable strings to the API...")
+        self.stdout.write(f"Pusing {len(translatable_strings)} translatable strings to the API...")
 
         data = {
             "translations": translatable_strings, 
@@ -76,6 +73,6 @@ class Command(BaseCommand):
         )
 
         if response.status_code == 200:
-            logger.info("Successfully pushed translatable strings.")
+            self.stdout.write("Successfully pushed translatable strings.")
         else:
-            logger.error(f"Failed to push translatable strings. Status code: {response.status_code} - {response.json()}")
+            self.stdout.write(f"Failed to push translatable strings. Status code: {response.status_code} - {response.json()}")

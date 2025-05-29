@@ -1,4 +1,3 @@
-import logging
 import os
 import time
 import polib
@@ -7,7 +6,6 @@ import requests
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
-logger = logging.getLogger(__name__)
 
 class Command(BaseCommand):
     """Extracts all translatable strings and makes an API request with them."""
@@ -17,7 +15,7 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         """Extracts all translatable strings and makes an API request with them."""
 
-        logger.info("Pulling translations...")
+        self.stdout.write("Pulling translations...")
         start_time = time.time()
 
         if not getattr(settings, "DJ_POLYGLOT_PROJECT", None):
@@ -37,19 +35,19 @@ class Command(BaseCommand):
         )
 
         if response.status_code != 200:
-            logger.info(f"Failed to receive translatable strings. Status code: {response.status_code}, {response.content}. Time: {time.time() - start_time:.2f} seconds.")
+            self.stdout.write(f"Failed to receive translatable strings. Status code: {response.status_code}, {response.content}. Time: {time.time() - start_time:.2f} seconds.")
             return
     
         translations += response.json()["translations"]
 
-        logger.info(f"Successfully received {len(translations)} translations from {source_project}")
+        self.stdout.write(f"Successfully received {len(translations)} translations from {source_project}")
 
-        logger.info(
+        self.stdout.write(
             f"Successfully received {len(translations)} translatable strings in {time.time() - start_time:.2f} seconds."
         )
         
         # Process translations for each locale
-        logger.info("Adding translations to the PO files...")
+        self.stdout.write("Adding translations to the PO files...")
 
         locale_mapping = {"zh-hans": "zh_HAns", "zh-hant": "zh_HAnt", "pt-pt": "pt_PT"}
 
@@ -60,11 +58,11 @@ class Command(BaseCommand):
             # Map locale to specific format if necessary
             locale = locale_mapping.get(locale, locale)
 
-            logger.info(f"Processing locale: {locale}")
+            self.stdout.write(f"Processing locale: {locale}")
             po_file_path = os.path.join(settings.BASE_DIR, "locale", locale, "LC_MESSAGES", "django.po")
 
             if not os.path.exists(po_file_path):
-                logger.info(self.style.ERROR(f"File {po_file_path} not found"))
+                self.stdout.write(self.style.ERROR(f"File {po_file_path} not found"))
                 continue
 
             # Open the PO file
@@ -93,5 +91,5 @@ class Command(BaseCommand):
             # Save the PO file
             po_file.save(po_file_path)
 
-        logger.info("Translations successfully added to the PO files.")
-        logger.info(f"Pulling translations completed in {time.time() - start_time:.2f} seconds.")
+        self.stdout.write("Translations successfully added to the PO files.")
+        self.stdout.write(f"Pulling translations completed in {time.time() - start_time:.2f} seconds.")
