@@ -57,7 +57,7 @@ class Command(BaseCommand):
         data = {
             "translations": translatable_strings, 
             "source_project": settings.DJ_POLYGLOT_PROJECT,
-            "no_obselete": kwargs.get("no_obsolete", False),
+            "no_obsolete": kwargs.get("no_obsolete", False),
             "auto_translate": kwargs.get("auto_translate", False),
         }
 
