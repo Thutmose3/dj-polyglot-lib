@@ -46,7 +46,7 @@ class Command(BaseCommand):
         # Iterate over all .po files in the locale directory
         for root, dirs, files in os.walk(locale_path):
             for file in files:
-                self.stdout.write(f"Processing file: {file}")
+                self.stdout.write(f"Processing file: {file} in {root}")
                 if file.endswith(".po"):
                     po_file_path = os.path.join(root, file)
                     po_file = polib.pofile(po_file_path)
@@ -75,4 +75,4 @@ class Command(BaseCommand):
         if response.status_code == 200:
             self.stdout.write("Successfully pushed translatable strings.")
         else:
-            self.stdout.write(f"Failed to push translatable strings. Status code: {response.status_code} - {response.json()}")
+            self.stdout.write(f"Failed to push translatable strings. Status code: {response.status_code} - {response.headers} - {response.text}")
