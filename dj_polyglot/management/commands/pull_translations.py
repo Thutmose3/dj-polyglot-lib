@@ -8,12 +8,10 @@ from django.core.management.base import BaseCommand
 
 
 class Command(BaseCommand):
-    """Extracts all translatable strings and makes an API request with them."""
 
     help = "Extracts all translatable strings and makes an API request with them."
 
     def handle(self, *args, **kwargs):
-        """Extracts all translatable strings and makes an API request with them."""
 
         self.stdout.write("Pulling translations...")
         start_time = time.time()

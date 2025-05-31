@@ -6,7 +6,6 @@ from django.core.management.base import BaseCommand
 
 
 class Command(BaseCommand):
-    """Command to extract all translatable strings and send them to an API endpoint."""
 
     help = __doc__.strip()
 
@@ -23,7 +22,6 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **kwargs):
-        """Handle the command."""
         import polib
         # Ensure that DJ_POLYGLOT_PROJECT and DJ_POLYGLOT_KEY are available
         if not getattr(settings, "DJ_POLYGLOT_PROJECT", None):
@@ -39,8 +37,8 @@ class Command(BaseCommand):
         # Iterate over all .po files in the locale directory
         for root, dirs, files in os.walk(locale_path):
             for file in files:
-                self.stdout.write(f"Processing file: {file} in {root}")
                 if file.endswith(".po"):
+                    self.stdout.write(f"Processing file: {file} in {root}")
                     po_file_path = os.path.join(root, file)
                     po_file = polib.pofile(po_file_path)
 
